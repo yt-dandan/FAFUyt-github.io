@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>丝绸之路 · 千年商旅史诗</title>
+    <!-- Leaflet 地图库 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family: "Microsoft YaHei",sans-serif; }
+        body { background:#f5f2e9; overflow:hidden; }
+
+        /* 高级渐变标题栏 */
+        .header {
+            height:60px; 
+            background: linear-gradient(90deg, #5D3A1A, #A66F38, #5D3A1A);
+            color:white; text-align:center; line-height:60px; 
+            font-size:24px; font-weight:bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        /* 地图容器 */
+        #map {
+            width:100%; height:calc(100vh - 60px);
+        }
+
+        /* 地图加载提示 */
+        .map-loading {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            color:#5D3A1A; font-size:18px; z-index:100;
+            background: rgba(255,255,255,0.9); padding:20px 40px; border-radius:10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* 故事面板美化 */
+        .story-panel {
+            position:absolute; top:80px; right:20px; width:350px;
+            background:rgba(255,255,255,0.98); 
+            border-radius:16px; padding:24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15); 
+            z-index:999;
+            transition:all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border-left:4px solid #A66F38;
+        }
+
+        .story-panel h2 {
+            color:#5D3A1A; margin-bottom:12px; font-size:20px;
+            font-weight: bold;
+        }
+
+        .story-panel p {
+            color:#333; line-height:1.7; font-size:15px; margin-bottom:10px;
+        }
+
+        .story-panel img {
+            width:100%; border-radius:12px; margin:15px 0; height:180px; object-fit:cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .story-panel img:hover {
+            transform: scale(1.02);
+        }
+
+        /* 章节按钮美化 */
+        .chapter-btn {
+            position:absolute; bottom:30px; left:50%; transform:translateX(-50%); z-index:999;
+            display: flex; gap: 10px;
+        }
+
+        .chapter-btn button {
+            background: linear-gradient(135deg, #5D3A1A, #A66F38);
+            color:white; border:none; padding:12px 24px;
+            border-radius:25px; cursor:pointer; font-size:14px; font-weight:500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .chapter-btn button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        .chapter-btn button:active {
+            transform: translateY(0);
+        }
+
+        /* 隐藏面板动画 */
+        .hide { 
+            opacity:0; 
+            transform: translateY(30px) scale(0.95); 
+            pointer-events:none; 
+        }
+
+        /* 地图标记点美化 */
+        .custom-icon {
+            background: #A66F38;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(166, 111, 56, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">丝绸之路 · 千年商旅史诗</div>
+    <div id="map">
+        <div class="map-loading">地图加载中...</div>
+    </div>
+
+    <!-- 故事面板：内容优化，更有质感 -->
+    <div class="story-panel" id="panel1">
+        <h2>【开端】长安 · 丝路起点</h2>
+        <img src="https://bkimg.cdn.bcebos.com/smart/from=pc/aid=10743444665591455515/baike/s%3D220/sign=08c0002b9082d158a6e5e8e38047c823/902397dda144ad3413557552d4a20cf430ad8515.jpg" alt="长安">
+        <p><strong>时间：</strong>西汉 · 公元前138年</p>
+        <p><strong>主体：</strong>张骞与西汉使团</p>
+        <p>汉武帝派遣张骞出使西域，从长安出发，凿空东西方交流之路，开启了人类文明史上最壮丽的篇章。</p>
+    </div>
+    <div class="story-panel hide" id="panel2">
+        <h2>【发展】河西走廊 · 咽喉要道</h2>
+        <img src="https://bkimg.cdn.bcebos.com/smart/from=pc/aid=10743444665591455515/baike/s%3D220/sign=908339309e22720e7fc3d8954bec2f01/0eb30f2442a7d933715025c6ac4bd11372f08115.jpg" alt="河西走廊">
+        <p><strong>重镇：</strong>武威、张掖、酒泉、敦煌</p>
+        <p>商旅穿越戈壁荒漠，四大重镇成为补给与文化交汇中心，见证了丝路的繁荣与兴衰。</p>
+    </div>
+    <div class="story-panel hide" id="panel3">
+        <h2>【高潮】西域 · 文明交融</h2>
+        <img src="https://bkimg.cdn.bcebos.com/smart/from=pc/aid=10743444665591455515/baike/s%3D220/sign=318378289023dd42729a54c2b7b5436b/0824ab18972bd4071523104878899e510eb30915.jpg" alt="西域">
+        <p><strong>古国：</strong>楼兰、龟兹、于阗</p>
+        <p>丝绸、茶叶、瓷器西传，葡萄、苜蓿、佛教、艺术东传，人类文明在此深度融合，创造了辉煌的丝路文化。</p>
+    </div>
+    <div class="story-panel hide" id="panel4">
+        <h2>【延伸】中亚 · 丝路枢纽</h2>
+        <img src="https://bkimg.cdn.bcebos.com/smart/from=pc/aid=10743444665591455515/baike/s%3D220/sign=9d8239099f3df8dca150000c10360914/0824ab18972bd4071523104878899e510eb30915.jpg" alt="撒马尔罕">
+        <p><strong>都市：</strong>撒马尔罕、布哈拉</p>
+        <p>世界级商贸都市，东西方商队在此交换商品与信仰，成为连接亚欧的黄金枢纽。</p>
+    </div>
+    <div class="story-panel hide" id="panel5">
+        <h2>【结尾】大秦 · 丝路终点</h2>
+        <img src="https://bkimg.cdn.bcebos.com/smart/from=pc/aid=10743444665591455515/baike/s%3D220/sign=898339309e22720e7fc3d8954bec2f01/0eb30f2442a7d933715025c6ac4bd11372f08115.jpg" alt="古罗马">
+        <p><strong>终点：</strong>古罗马帝国（欧洲）</p>
+        <p>丝绸之路跨越万里，串联起亚欧大陆，成为人类历史上最伟大的交流通道，影响至今。</p>
+    </div>
+
+    <div class="chapter-btn">
+        <button onclick="go(1)">长安起点</button>
+        <button onclick="go(2)">河西走廊</button>
+        <button onclick="go(3)">西域古国</button>
+        <button onclick="go(4)">中亚枢纽</button>
+        <button onclick="go(5)">欧洲终点</button>
+    </div>
+
+    <script>
+        // 初始化地图
+        const map = L.map('map').setView([34.263, 108.948], 4);
+        
+        // 高德瓦片底图（稳定加载）
+        const baseLayer = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+            attribution: '&copy; 高德地图',
+            subdomains: ['1','2','3','4']
+        }).addTo(map);
+
+        // 地图加载完成后隐藏提示
+        map.whenReady(function() {
+            document.querySelector('.map-loading').style.display = 'none';
+        });
+
+        // 丝路路线坐标
+        const route = [
+            [34.263, 108.948],  // 长安
+            [36.059, 103.824],  // 武威
+            [40.430, 94.599],   // 敦煌
+            [40.818, 88.162],   // 楼兰
+            [37.115, 79.925],   // 龟兹
+            [39.725, 67.015],   // 撒马尔罕
+            [33.320, 44.367]    // 古罗马
+        ];
+
+        // 绘制路线（渐变+发光效果）
+        const polyline = L.polyline(route, {
+            color: '#A66F38', 
+            weight: 5, 
+            opacity: 0.9,
+            lineJoin: 'round'
+        }).addTo(map);
+
+        // 为每个节点添加标记点
+        const markerIcons = [
+            '长安', '武威', '敦煌', '楼兰', '龟兹', '撒马尔罕', '大秦'
+        ];
+        route.forEach((point, index) => {
+            const icon = L.divIcon({
+                className: 'custom-icon',
+                iconSize: [12, 12]
+            });
+            L.marker(point, {icon: icon}).addTo(map).bindPopup(`<b>${markerIcons[index]}</b>`);
+        });
+
+        // 章节切换（带平滑动画）
+        function go(ch) {
+            document.querySelectorAll('.story-panel').forEach(p=>p.classList.add('hide'));
+            document.getElementById(`panel${ch}`).classList.remove('hide');
+            
+            // 平滑地图漫游
+            switch(ch) {
+                case 1: map.flyTo([34.263,108.948],5, {duration: 1.5}); break;
+                case 2: map.flyTo([38.5,99.0],5, {duration: 1.5}); break;
+                case 3: map.flyTo([38.0,85.0],5, {duration: 1.5}); break;
+                case 4: map.flyTo([39.725,67.015],6, {duration: 1.5}); break;
+                case 5: map.flyTo([35.0,30.0],4, {duration: 1.5}); break;
+            }
+        }
+        go(1);
+    </script>
+</body>
+</html>
