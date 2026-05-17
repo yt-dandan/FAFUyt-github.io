@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北伐战争空间叙事地理系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:"微软雅黑",serif;}
+        body{background-color:#fff5eb;color:#333;overflow:hidden;}
+        /* 顶部标题栏 */
+        .top-head{
+            width:100%;height:75px;
+            background:linear-gradient(135deg,#c86c40,#b85c30);
+            display:flex;align-items:center;padding:0 40px;
+            box-shadow:0 3px 12px rgba(180,90,50,0.3);
+        }
+        .head-text h1{color:#fff;font-size:24px;letter-spacing:2px;}
+        .head-text p{color:#ffe8d8;font-size:13px;margin-top:4px;}
+        /* 主体布局 */
+        .main-wrap{display:flex;width:100vw;height:calc(100vh - 75px);position:relative;}
+        /* 左侧总叙事面板 */
+        .left-info{
+            width:320px;background:#fff0e4;
+            border-right:1px solid #e9d2bc;padding:25px 20px;
+            overflow-y:auto;
+        }
+        .left-info h2{
+            color:#b85c30;font-size:19px;padding-bottom:10px;
+            border-bottom:2px solid #e0b898;margin-bottom:18px;
+        }
+        .info-block{margin-bottom:20px;}
+        .info-block h3{font-size:15px;color:#c86c40;margin-bottom:8px;}
+        .info-block p{font-size:13px;line-height:1.7;text-indent:2em;color:#555;}
+        .data-box{
+            background:#ffe8d8;padding:14px;border-radius:8px;margin:12px 0;
+            border-left:4px solid #c86c40;
+        }
+        .data-box p{font-size:12px;margin:5px 0;text-indent:0;}
+        /* 主地图 */
+        #mainMap{flex:1;height:100%;background:#e6f0f8;}
+        /* 右侧实时阶段故事弹窗 */
+        .right-story-box{
+            position:absolute;
+            top:30px;
+            right:30px;
+            width:300px;
+            background:rgba(255,240,228,0.95);
+            border:2px solid #c86c40;
+            border-radius:12px;
+            padding:20px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.15);
+            z-index:997;
+        }
+        .right-story-box h4{
+            color:#b85c30;font-size:17px;margin-bottom:12px;
+            padding-bottom:8px;border-bottom:1px solid #e0b898;
+        }
+        .right-story-box .time-info{
+            font-size:13px;color:#d35400;font-weight:bold;margin-bottom:10px;
+        }
+        .right-story-box .story-content{
+            font-size:13px;line-height:1.8;color:#444;
+            text-align:justify;
+        }
+        /* 底部进度条 */
+        .time-slider-box{
+            position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+            width:80%;max-width:900px;z-index:999;
+        }
+        #timeSlider{
+            width:100%;height:12px;border-radius:6px;
+            background:#e9d2bc;outline:none;-webkit-appearance:none;
+        }
+        #timeSlider::-webkit-slider-thumb{
+            -webkit-appearance:none;width:26px;height:26px;
+            border-radius:50%;background:#b85c30;cursor:pointer;border:2px solid #fff;
+        }
+        .stage-name{
+            text-align:center;margin-top:10px;font-size:16px;
+            color:#b85c30;font-weight:bold;
+        }
+        /* 弹窗样式 */
+        .pop-title{font-size:14px;font-weight:bold;color:#b85c30;margin-bottom:4px;}
+        .pop-desc{font-size:12px;color:#444;line-height:1.5;}
+        /* 军阀势力标注样式 */
+        .warlord-label{
+            color:#8b0000;font-weight:bold;font-size:13px;
+            background:rgba(255,240,228,0.8);padding:3px 8px;
+            border-radius:4px;border:1px solid #c86c40;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-head">
+        <div class="head-text">
+            <h1>北伐战争空间叙事地理系统</h1>
+            <p>1926-1928 行军路线动态可视化 · 课程空间叙事作业</p>
+        </div>
+    </div>
+
+    <div class="main-wrap">
+        <!-- 左侧整体概况 -->
+        <div class="left-info">
+            <h2>战争整体叙事概述</h2>
+            <div class="info-block">
+                <h3>战争背景</h3>
+                <p>民国初期国内军阀割据混战，百姓民不聊生，1926年国民政府确立北伐方针，以打倒列强、铲除军阀为革命目标，组建国民革命军正式出师北伐，开启全国统一之战。</p>
+            </div>
+            <div class="data-box">
+                <p>📅 出征时间：1926年7月9日</p>
+                <p>🏁 结束时间：1928年6月</p>
+                <p>⚔ 对战势力：北伐军 VS 直系/奉系/皖系军阀</p>
+                <p>🗺 叙事方式：地图漫游+路线动画+实时事件解说</p>
+            </div>
+            <div class="info-block">
+                <h3>使用说明</h3>
+                <p>拖动底部时间进度条切换战争进程，地图自动缩放视角、生成动态行军路线，右侧同步弹出当下阶段发生的历史小故事，精准对应时间、地点与战役事件。</p>
+            </div>
+            <div class="info-block">
+                <h3>叙事规则</h3>
+                <p>初始页面展示战前军阀势力与核心据点，切换至对应阶段才显示当下行军城镇与战场，全程依靠地图空间变化推动剧情，文字仅作辅助讲解。</p>
+            </div>
+        </div>
+
+        <!-- 主地图区域 -->
+        <div id="mainMap"></div>
+
+        <!-- 右侧实时阶段小故事面板 -->
+        <div class="right-story-box" id="rightStory">
+            <h4 id="storyTitle">战前局势介绍</h4>
+            <div class="time-info" id="storyTime">历史时间：1926年7月之前</div>
+            <div class="story-content" id="storyText">
+                北伐战争正式爆发前夕，全国被三大军阀势力分割占据，形成三足鼎立之势。吴佩孚盘踞两湖地区（湖北、湖南），以武汉为核心据点，掌控长江中游；孙传芳掌控东南五省（江苏、浙江、安徽、福建、江西），以南京为大本营；张作霖坐镇北方京津地区及东北三省，势力最庞大。各方势力相互对峙、战乱不断，国民革命军在广州整军备战，筹备北伐大业，同时联合冯玉祥部作为策应，形成南北夹击之势。
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部时间进度条 -->
+    <div class="time-slider-box">
+        <input type="range" id="timeSlider" min="0" max="5" value="0">
+        <div class="stage-name" id="stageTxt">阶段一：战前全国势力格局</div>
+    </div>
+
+<script>
+// 初始化地图
+const map = L.map('mainMap',{zoomControl:true}).setView([33.5,114.8],4);
+// 国内稳定高德底图
+L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',{
+    attribution:'空间叙事课程作业',
+    subdomains:["1","2","3","4"]
+}).addTo(map);
+
+// 所有地理点位（新增战前军阀核心据点）
+const allSite = [
+    {name:"广州",lat:23.1291,lng:113.2644,desc:"北伐大本营，1926年7月正式誓师北伐，国民革命军整军之地"},
+    {name:"韶关",lat:24.8082,lng:113.6162,desc:"岭南北上第一道军事关口"},
+    {name:"衡阳",lat:26.8885,lng:112.5718,desc:"湖南南部核心集结地点"},
+    {name:"长沙",lat:28.2282,lng:112.9388,desc:"攻克长沙，彻底平定湖南全境"},
+    {name:"岳阳",lat:29.3703,lng:113.1376,desc:"湘北门户，进军湖北前沿阵地"},
+    {name:"汀泗桥",lat:29.8486,lng:113.8197,desc:"北伐首场大胜，重创吴佩孚主力部队"},
+    {name:"贺胜桥",lat:30.0775,lng:114.0472,desc:"鄂南决战，北洋精锐全线溃败"},
+    {name:"武昌",lat:30.5928,lng:114.3055,desc:"吴佩孚核心据点，华中军事重镇，北伐关键战场"},
+    {name:"九江",lat:29.7121,lng:115.9682,desc:"长江水路要道，东进江西必经之地"},
+    {name:"南昌",lat:28.6819,lng:115.8581,desc:"孙传芳东南势力重要据点，拉锯作战主战场"},
+    {name:"福州",lat:26.0781,lng:119.2992,desc:"顺利平定福建东南区域"},
+    {name:"杭州",lat:30.2797,lng:120.1521,desc:"浙江全境和平归附北伐阵营"},
+    {name:"安庆",lat:30.5196,lng:117.0323,desc:"安徽全境顺利收复"},
+    {name:"南京",lat:32.0415,lng:118.7823,desc:"孙传芳东南五省大本营，后成为国民政府首都"},
+    {name:"徐州",lat:34.2131,lng:117.2323,desc:"南北中原咽喉，兵家必争之地"},
+    {name:"郑州",lat:34.7577,lng:113.6622,desc:"平定河南，打通进军华北主干道"},
+    {name:"济南",lat:36.6701,lng:117.0012,desc:"进入山东地界，正式踏入华北地区"},
+    {name:"北京",lat:39.9042,lng:116.4074,desc:"张作霖奉系军阀统治核心，北伐最终目的地"},
+    {name:"沈阳",lat:41.8075,lng:123.4318,desc:"张作霖东北大本营，奉系军阀根基之地"},
+    {name:"天津",lat:39.1303,lng:117.2003,desc:"华北沿海重要军事重镇，奉系势力南下枢纽"}
+];
+
+// 阶段标题
+const stageTextArr = [
+    "阶段一：战前全国势力格局",
+    "阶段二：岭南出兵，进军湘南",
+    "阶段三：两湖决战，攻克武汉",
+    "阶段四：横扫东南，平定赣闽浙皖",
+    "阶段五：拿下金陵，掌控江南",
+    "阶段六：北上中原，进驻京津统一全国"
+];
+
+// 每一阶段 右侧专属小故事（时间+地点+详细事件）
+const stageStory = [
+    {
+        title:"战前局势介绍",
+        time:"历史时间：1926年7月之前",
+        content:"北伐战争正式爆发前夕，全国被三大军阀势力分割占据，形成三足鼎立之势。吴佩孚盘踞两湖地区（湖北、湖南），以武汉为核心据点，掌控长江中游；孙传芳掌控东南五省（江苏、浙江、安徽、福建、江西），以南京为大本营；张作霖坐镇北方京津地区及东北三省，势力最庞大。各方势力相互对峙、战乱不断，国民革命军在广州整军备战，筹备北伐大业，同时联合冯玉祥部作为策应，形成南北夹击之势。此时的广州作为国民革命的大本营，已完成军队整编，确立了“先打吴佩孚、再攻孙传芳、最后讨伐张作霖”的作战总方略，静待出征时机。"
+    },
+    {
+        title:"广州誓师，挺进湖南",
+        time:"历史时间：1926年7月-8月",
+        content:"1926年7月9日，十万北伐大军在广州举行盛大誓师大会，正式宣告北伐开始。大军从广州出发，途经韶关翻越五岭进入湖南境内，一路向北推进，顺利攻占衡阳等地，快速逼近长沙，北洋湘军节节败退，北伐首战局势一片大好。其中叶挺独立团作为先锋部队，率先突破北洋军防线，为后续大军推进扫清障碍，韶关作为岭南北上的第一道关口，成为北伐军重要的补给中转站。"
+    },
+    {
+        title:"鄂南血战，攻克武昌",
+        time:"历史时间：1926年8月-10月",
+        content:"北伐军拿下长沙之后继续北上，接连打响汀泗桥战役与贺胜桥战役，两场硬仗彻底击溃吴佩孚麾下精锐主力。大军顺势兵临武昌城下，经过长达一个月的围城作战，成功拿下武昌、汉口、汉阳三镇，彻底平定湖北全境，华中地区纳入北伐掌控范围。汀泗桥地势险要，吴佩孚在此部署重兵防守，北伐军凭借顽强斗志突破防线，贺胜桥一战更是彻底摧毁吴佩孚的抵抗信心，武昌的攻克标志着直系军阀主力基本被消灭。"
+    },
+    {
+        title:"转战东南，平定江南腹地",
+        time:"历史时间：1926年11月-1927年1月",
+        content:"平定两湖之后，北伐军兵分东路进军江西，与孙传芳主力展开南昌拉锯大战，几经反复最终攻克南昌。同时东路军顺势南下收复福建，向西收服浙江，短短数月横扫东南半壁江山，瓦解孙传芳东南五省割据势力。南昌作为孙传芳在江西的核心据点，双方展开多次激烈争夺，最终北伐军凭借人数优势和群众支持，成功拿下南昌，为后续进军南京奠定基础；福州、杭州等地则通过和平谈判与军事威慑相结合的方式，顺利归附北伐阵营。"
+    },
+    {
+        title:"攻克南京，奠定南方基业",
+        time:"历史时间：1927年2月-3月",
+        content:"1927年开春，北伐军从浙江、安徽两路夹击江南重镇南京，顺利渡江攻占金陵城。自此长江以南大部分领土全部被北伐军收复，国民政府定都南京，南方局势彻底稳定，为后续北上征战打下坚实基础。南京作为孙传芳的大本营，是东南地区的政治、军事、经济中心，攻克南京不仅瓦解了孙传芳的残余势力，更标志着北伐军在南方的统治正式确立，成为北伐战争的重要转折点。"
+    },
+    {
+        title:"挥师北上，全国大势统一",
+        time:"历史时间：1927年-1928年6月",
+        content:"南方安定之后，北伐大军全力北上，先后拿下中原重镇徐州、郑州，彻底肃清直系残余势力。大军继续进入山东境内一路北上，直逼京津地区，1928年奉系军阀撤出关外，北伐军和平进驻北京、天津，历时两年的北伐战争正式结束，中国实现形式上的全国统一。徐州作为南北交通枢纽，是北伐军北上的必经之地，济南一战则彻底击溃奉系军阀在山东的势力，北京的和平接收标志着北伐战争的最终胜利，结束了近代中国长期军阀割据的混乱局面。"
+    }
+];
+
+// 各阶段行军路线
+const routeData = [
+    [], // 战前无行军路线，只显示势力据点
+    [[23.1291,113.2644],[24.8082,113.6162],[26.8885,112.5718],[28.2282,112.9388]],
+    [[28.2282,112.9388],[29.3703,113.1376],[29.8486,113.8197],[30.0775,114.0472],[30.5928,114.3055]],
+    [[30.5928,114.3055],[29.7121,115.9682],[28.6819,115.8581],[26.0781,119.2992],[30.2797,120.1521]],
+    [[30.2797,120.1521],[30.5196,117.0323],[32.0415,118.7823]],
+    [[32.0415,118.7823],[34.2131,117.2323],[34.7577,113.6622],[36.6701,117.0012],[39.9042,116.4074]]
+];
+
+// 各阶段地图视角
+const mapViewData = [
+    {lat:33.5,lng:114.8,z:4},
+    {lat:26.5,lng:113.2,z:6},
+    {lat:29.8,lng:113.9,z:6.5},
+    {lat:29.2,lng:116.5,z:5.5},
+    {lat:31.2,lng:117.8,z:6},
+    {lat:36.8,lng:115.6,z:4.5}
+];
+
+// 战前三大军阀势力标注（新增）
+const warlordData = [
+    {name:"吴佩孚（直系）",lat:30.5928,lng:114.3055,desc:"盘踞两湖地区，核心据点武昌，兵力约20万"},
+    {name:"孙传芳（五省联军）",lat:32.0415,lng:118.7823,desc:"掌控东南五省，核心据点南京，兵力约20万"},
+    {name:"张作霖（奉系）",lat:39.9042,lng:116.4074,desc:"坐镇北方+东北，核心据点北京、沈阳，兵力约35万"},
+    {name:"国民革命军（北伐军）",lat:23.1291,lng:113.2644,desc:"大本营广州，兵力约10万，整装待发"}
+];
+
+let pointLayer = L.layerGroup();
+let lineLayer = L.layerGroup();
+let warlordLayer = L.layerGroup(); // 军阀势力标注图层
+let sliderDom = document.getElementById("timeSlider");
+let txtDom = document.getElementById("stageTxt");
+let storyTitle = document.getElementById("storyTitle");
+let storyTime = document.getElementById("storyTime");
+let storyText = document.getElementById("storyText");
+
+// 清空所有图层
+function clearAllLayer(){
+    pointLayer.clearLayers();
+    lineLayer.clearLayers();
+    warlordLayer.clearLayers(); // 清空军阀标注
+}
+
+// 添加当前阶段点位
+function addPointMark(siteList){
+    siteList.forEach(item=>{
+        L.marker([item.lat,item.lng])
+        .bindPopup(`<div class="pop-title">${item.name}</div><div class="pop-desc">${item.desc}</div>`)
+        .addTo(pointLayer);
+    })
+}
+
+// 动态绘制行军路线
+function createDynamicLine(pathArr,lineColor){
+    let polyLine = L.polyline([],{
+        color:lineColor,weight:5,opacity:0.8,dashArray:"12,6"
+    }).addTo(lineLayer);
+    let index = 0;
+    let timer = setInterval(()=>{
+        polyLine.setLatLngs(pathArr.slice(0,index+1));
+        index++;
+        if(index >= pathArr.length) clearInterval(timer);
+    },180);
+}
+
+// 添加战前军阀势力标注（新增）
+function addWarlordMark(){
+    warlordData.forEach(item=>{
+        // 军阀标记（红色，区分北伐军）
+        let warlordMarker = L.marker([item.lat,item.lng], {
+            icon: L.divIcon({
+                className: 'warlord-marker',
+                html: `<div style="color:#8b0000;font-size:14px;">⚔</div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).bindPopup(`<div class="pop-title">${item.name}</div><div class="pop-desc">${item.desc}</div>`);
+        warlordMarker.addTo(warlordLayer);
+        
+        // 势力范围文字标注
+        L.marker([item.lat+0.8, item.lng], {
+            icon: L.divIcon({
+                className: 'warlord-label',
+                html: item.name,
+                iconSize: [100, 30],
+                iconAnchor: [50, 15]
+            })
+        }).addTo(warlordLayer);
+    })
+}
+
+// 切换战争阶段
+function switchWarStage(val){
+    clearAllLayer();
+    // 更新底部阶段文字
+    txtDom.innerText = stageTextArr[val];
+    // 更新右侧实时小故事
+    storyTitle.innerText = stageStory[val].title;
+    storyTime.innerText = stageStory[val].time;
+    storyText.innerText = stageStory[val].content;
+    // 地图飞行切换视角
+    let viewInfo = mapViewData[val];
+    map.flyTo([viewInfo.lat,viewInfo.lng],viewInfo.z,{duration:1.2});
+
+    // 分阶段显示点位和内容，阶段一不再空白
+    if(val === 0){
+        // 战前：显示三大军阀势力标注+北伐军大本营（广州）
+        addWarlordMark();
+        let nowSite = allSite.filter(s=>["广州","武昌","南京","北京","沈阳"].includes(s.name));
+        addPointMark(nowSite);
+    }else if(val === 1){
+        let nowSite = allSite.filter(s=>["广州","韶关","衡阳","长沙"].includes(s.name));
+        addPointMark(nowSite);
+        createDynamicLine(routeData[1],"#e67e22");
+    }else if(val === 2){
+        let nowSite = allSite.filter(s=>["长沙","岳阳","汀泗桥","贺胜桥","武昌"].includes(s.name));
+        addPointMark(nowSite);
+        createDynamicLine(routeData[2],"#d35400");
+    }else if(val === 3){
+        let nowSite = allSite.filter(s=>["武昌","九江","南昌","福州","杭州"].includes(s.name));
+        addPointMark(nowSite);
+        createDynamicLine(routeData[3],"#f39c12");
+    }else if(val === 4){
+        let nowSite = allSite.filter(s=>["杭州","安庆","南京"].includes(s.name));
+        addPointMark(nowSite);
+        createDynamicLine(routeData[4],"#c0392b");
+    }else if(val === 5){
+        let nowSite = allSite.filter(s=>["南京","徐州","郑州","济南","北京"].includes(s.name));
+        addPointMark(nowSite);
+        createDynamicLine(routeData[5],"#a04020");
+    }
+    pointLayer.addTo(map);
+    lineLayer.addTo(map);
+    warlordLayer.addTo(map); // 加载军阀标注图层
+}
+
+// 拖拽进度条触发切换
+sliderDom.addEventListener("input",function(){
+    let num = parseInt(this.value);
+    switchWarStage(num);
+});
+
+// 默认加载初始阶段（阶段一，有内容不空白）
+switchWarStage(0);
+
+// 6秒自动切换进程
+setInterval(()=>{
+    let nowNum = parseInt(sliderDom.value);
+    let nextNum = nowNum >=5 ? 0 : nowNum+1;
+    sliderDom.value = nextNum;
+    switchWarStage(nextNum);
+},6000);
+</script>
+</body>
+</html>
